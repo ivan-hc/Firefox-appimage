@@ -3,4 +3,4 @@ https://github.com/ivan-hc/Firefox-appimage/releases/download/continuous-nightly
 https://github.com/ivan-hc/Firefox-appimage/releases/download/continuous-esr/Firefox-esr-128.12.0-x86_64.AppImage
 https://github.com/ivan-hc/Firefox-appimage/releases/download/continuous-devedition/Firefox-devedition-141.0-x86_64.AppImage
 https://github.com/ivan-hc/Firefox-appimage/releases/download/continuous-beta/Firefox-beta-141.0-x86_64.AppImage
-Sun Jul 13 01:03:52 UTC 2025
+Tue Jul 15 01:00:12 UTC 2025
