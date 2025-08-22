@@ -8,9 +8,10 @@ cd ./tmp || exit 1
 
 # DOWNLOAD APPIMAGETOOL
 if ! test -f ./appimagetool; then
-	wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool || exit 1
+	wget -q https://github.com/pkgforge-dev/appimagetool-uruntime/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool || exit 1
 	chmod a+x ./appimagetool
 fi
+export URUNTIME_PRELOAD=1
 
 # CREATE FIREFOX BROWSER APPIMAGES
 
@@ -356,10 +357,11 @@ Name[zh_TW]=新增隱私視窗
 Exec=firefox --private-window %u"
 
 POLICIES='{
-"policies": 
-   {
-     "DisableAppUpdate": true
-    }
+"policies": {
+    "DisableAppUpdate": true,
+    "AppAutoUpdate": false,
+    "BackgroundAppUpdate": false
+  }
 }'
 
 _create_firefox_appimage() {
@@ -398,7 +400,6 @@ _create_firefox_appimage() {
 	cat <<-'HEREDOC' >> ./"$APP".AppDir/AppRun
 	#!/bin/sh
 	HERE="$(dirname "$(readlink -f "${0}")")"
-	export UNION_PRELOAD="${HERE}"
 	export PATH="${HERE}:${PATH}"
 	export MOZ_LEGACY_PROFILES=1
 	export MOZ_APP_LAUNCHER="${APPIMAGE}"
@@ -407,8 +408,7 @@ _create_firefox_appimage() {
 	chmod a+x ./"$APP".AppDir/AppRun
 
 	# Export the AppDir to an AppImage
-	ARCH=x86_64 ./appimagetool --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 20 \
-		-u "gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|Firefox-appimage|continuous-$CHANNEL|*-$CHANNEL-*x86_64.AppImage.zsync" \
+	ARCH=x86_64 ./appimagetool -u "gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|Firefox-appimage|continuous-$CHANNEL|*-$CHANNEL-*x86_64.AppImage.zsync" \
 		./"$APP".AppDir Firefox-"$CHANNEL"-"$VERSION"-x86_64.AppImage || exit 1
 }
 
