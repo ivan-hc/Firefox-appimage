@@ -357,10 +357,8 @@ Name[zh_TW]=新增隱私視窗
 Exec=firefox --private-window %u"
 
 POLICIES='{
-"policies": {
-    "DisableAppUpdate": true,
-    "AppAutoUpdate": false,
-    "BackgroundAppUpdate": false
+  "policies": {
+    "DisableAppUpdate": true
   }
 }'
 
