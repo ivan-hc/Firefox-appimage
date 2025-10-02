@@ -356,12 +356,6 @@ Name[zh_CN]=新建隐私浏览窗口
 Name[zh_TW]=新增隱私視窗
 Exec=firefox --private-window %u"
 
-POLICIES='{
-  "policies": {
-    "DisableAppUpdate": true
-  }
-}'
-
 _create_firefox_appimage() {
 	# Detect the channel
 	if [ "$CHANNEL" != stable ]; then
@@ -376,8 +370,7 @@ _create_firefox_appimage() {
 		wget "$DOWNLOAD_URL" --trust-server-names || exit 1
 	fi
 	# Disable automatic updates
-	mkdir -p "$APP".AppDir/distribution
-	echo "$POLICIES" > "$APP".AppDir/distribution/policies.json
+	touch "$APP".AppDir/is_packaged_app
 	# Extract the archive
 	[ -e ./*tar.* ] && tar fx ./*tar.* && mv ./firefox/* "$APP".AppDir/ && rm -f ./*tar.* || exit 1
 	# Enter the AppDir
