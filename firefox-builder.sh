@@ -408,7 +408,7 @@ _create_firefox_appimage() {
 	export PATH="${HERE}:${PATH}"
 	export MOZ_LEGACY_PROFILES=1
 	export MOZ_APP_LAUNCHER="${APPIMAGE}"
-	exec "${HERE}"/firefox "$@"
+	"${HERE}"/firefox-bin "$@"
 	HEREDOC
 	chmod a+x ./"$APP".AppDir/AppRun
 
