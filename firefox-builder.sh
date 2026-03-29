@@ -404,10 +404,11 @@ _create_firefox_appimage() {
 	# Create te AppRun
 	cat <<-'HEREDOC' >> ./"$APP".AppDir/AppRun
 	#!/bin/sh
-	HERE="$(dirname "$(readlink -f "${0}")")"
-	export PATH="${HERE}:${PATH}"
+	HERE="$(cd "${0%/*}" && echo "$PWD")"
 	export MOZ_LEGACY_PROFILES=1
 	export MOZ_APP_LAUNCHER="${APPIMAGE}"
+	export SNAP_NAME="firefox"
+	export PATH="${HERE}:${PATH}"
 	"${HERE}"/firefox-bin "$@"
 	HEREDOC
 	chmod a+x ./"$APP".AppDir/AppRun
