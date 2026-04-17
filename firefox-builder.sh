@@ -7,11 +7,12 @@ mkdir -p tmp
 cd ./tmp || exit 1
 
 # DOWNLOAD APPIMAGETOOL
-if ! test -f ./appimagetool; then
-	wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool || exit 1
-	chmod a+x ./appimagetool
+if ! command -v appimagetool 1>/dev/null; then
+	if [ ! -f ./appimagetool ]; then
+		echo " Downloading appimagetool..." && curl -#Lo appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage && chmod a+x ./appimagetool || exit 1
+	fi
+	export PATH="$PWD":"${PATH}"
 fi
-#export URUNTIME_PRELOAD=1
 
 # CREATE FIREFOX BROWSER APPIMAGES
 
@@ -359,9 +360,9 @@ Exec=firefox --private-window %u"
 _create_firefox_appimage() {
 	# Detect the channel
 	if [ "$CHANNEL" != stable ]; then
-		DOWNLOAD_URL="https://download.mozilla.org/?product=$APP-$CHANNEL-latest&os=linux64"
+		DOWNLOAD_URL="https://download.mozilla.org/?product=$APP-$CHANNEL-latest&os=$archref"
 	else
-		DOWNLOAD_URL="https://download.mozilla.org/?product=$APP-latest&os=linux64"
+		DOWNLOAD_URL="https://download.mozilla.org/?product=$APP-latest&os=$archref"
 	fi
 
 	# Download with wget or wget2
@@ -372,9 +373,9 @@ _create_firefox_appimage() {
 	fi
 
 	# Disable automatic updates
-	mkdir -p "$APP".AppDir && touch "$APP".AppDir/is_packaged_app || exit 1
-	#mkdir -p "$APP".AppDir/distribution
-	#cat <<-'HEREDOC' >> "$APP".AppDir/distribution/policies.json
+	mkdir -p "$APP-$arch".AppDir && touch "$APP-$arch".AppDir/is_packaged_app || exit 1
+	#mkdir -p "$APP-$arch".AppDir/distribution
+	#cat <<-'HEREDOC' >> "$APP-$arch".AppDir/distribution/policies.json
 	#{
 	#  "policies": {
 	#    "DisableAppUpdate": true
@@ -383,10 +384,10 @@ _create_firefox_appimage() {
 	#HEREDOC
 
 	# Extract the archive
-	[ -e ./*tar.* ] && tar fx ./*tar.* && mv ./firefox/* "$APP".AppDir/ && rm -f ./*tar.* || exit 1
+	[ -e ./*tar.* ] && tar fx ./*tar.* && mv ./firefox/* "$APP-$arch".AppDir/ && rm -f ./*tar.* || exit 1
 
 	# Enter the AppDir
-	cd "$APP".AppDir || exit 1
+	cd "$APP-$arch".AppDir || exit 1
 
 	# Add the launcher and patch it depending on the release channel
 	echo "$LAUNCHER" > firefox.desktop
@@ -399,10 +400,10 @@ _create_firefox_appimage() {
 	cd .. || exit 1
 
 	# Check the version
-	VERSION=$(cat ./"$APP".AppDir/application.ini | grep "^Version=" | head -1 | cut -c 9-)
+	VERSION=$(cat ./"$APP-$arch".AppDir/application.ini | grep "^Version=" | head -1 | cut -c 9-)
 
 	# Create te AppRun
-	cat <<-'HEREDOC' >> ./"$APP".AppDir/AppRun
+	cat <<-'HEREDOC' >> ./"$APP-$arch".AppDir/AppRun
 	#!/bin/sh
 	HERE="$(cd "${0%/*}" && echo "$PWD")"
 	export MOZ_LEGACY_PROFILES=1
@@ -411,42 +412,51 @@ _create_firefox_appimage() {
 	export PATH="${HERE}:${PATH}"
 	"${HERE}"/firefox-bin "$@"
 	HEREDOC
-	chmod a+x ./"$APP".AppDir/AppRun
+	chmod a+x ./"$APP-$arch".AppDir/AppRun
 
 	# Export the AppDir to an AppImage
-	ARCH=x86_64 ./appimagetool -u "gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|Firefox-appimage|continuous-$CHANNEL|*-$CHANNEL-*x86_64.AppImage.zsync" \
-		./"$APP".AppDir Firefox-"$CHANNEL"-"$VERSION"-x86_64.AppImage || exit 1
+	ARCH="$arch" appimagetool -u "gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|Firefox-appimage|continuous-$CHANNEL|*-$CHANNEL-*$arch.AppImage.zsync" \
+		./"$APP-$arch".AppDir Firefox-"$CHANNEL"-"$VERSION"-$arch.AppImage || exit 1
 }
 
-CHANNEL="stable"
-mkdir -p "$CHANNEL" && cp ./appimagetool ./"$CHANNEL"/appimagetool && cd "$CHANNEL" || exit 1
-_create_firefox_appimage
-cd .. || exit 1
-mv ./"$CHANNEL"/*.AppImage* ./
+ARCHITECTURES="x86_64 aarch64"
+for arch in $ARCHITECTURES; do
+	if [ "$arch" = x86_64 ]; then
+		archref="linux64"
+	elif [ "$arch" = aarch64 ]; then
+		archref="linux64-aarch64"
+	fi
 
-CHANNEL="esr"
-mkdir -p "$CHANNEL" && cp ./appimagetool ./"$CHANNEL"/appimagetool && cd "$CHANNEL" || exit 1
-_create_firefox_appimage
-cd .. || exit 1
-mv ./"$CHANNEL"/*.AppImage* ./
+	CHANNEL="stable"
+	mkdir -p "$CHANNEL" && cd "$CHANNEL" || exit 1
+	_create_firefox_appimage
+	cd .. || exit 1
+	mv ./"$CHANNEL"/*.AppImage* ./
 
-CHANNEL="beta"
-mkdir -p "$CHANNEL" && cp ./appimagetool ./"$CHANNEL"/appimagetool && cd "$CHANNEL" || exit 1
-_create_firefox_appimage
-cd .. || exit 1
-mv ./"$CHANNEL"/*.AppImage* ./
+	CHANNEL="esr"
+	mkdir -p "$CHANNEL" && cd "$CHANNEL" || exit 1
+	_create_firefox_appimage
+	cd .. || exit 1
+	mv ./"$CHANNEL"/*.AppImage* ./
 
-CHANNEL="devedition"
-mkdir -p "$CHANNEL" && cp ./appimagetool ./"$CHANNEL"/appimagetool && cd "$CHANNEL" || exit 1
-_create_firefox_appimage
-cd .. || exit 1
-mv ./"$CHANNEL"/*.AppImage* ./
+	CHANNEL="beta"
+	mkdir -p "$CHANNEL" && cd "$CHANNEL" || exit 1
+	_create_firefox_appimage
+	cd .. || exit 1
+	mv ./"$CHANNEL"/*.AppImage* ./
 
-CHANNEL="nightly"
-mkdir -p "$CHANNEL" && cp ./appimagetool ./"$CHANNEL"/appimagetool && cd "$CHANNEL" || exit 1
-_create_firefox_appimage
-cd .. || exit 1
-mv ./"$CHANNEL"/*.AppImage* ./
+	CHANNEL="devedition"
+	mkdir -p "$CHANNEL" && cd "$CHANNEL" || exit 1
+	_create_firefox_appimage
+	cd .. || exit 1
+	mv ./"$CHANNEL"/*.AppImage* ./
+
+	CHANNEL="nightly"
+	mkdir -p "$CHANNEL" && cd "$CHANNEL" || exit 1
+	_create_firefox_appimage
+	cd .. || exit 1
+	mv ./"$CHANNEL"/*.AppImage* ./
+done
 
 cd ..
 mv ./tmp/*.AppImage* ./
