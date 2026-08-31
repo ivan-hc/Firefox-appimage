@@ -408,7 +408,6 @@ _create_firefox_appimage() {
 	HERE="$(cd "${0%/*}" && echo "$PWD")"
 	export MOZ_LEGACY_PROFILES=1
 	export MOZ_APP_LAUNCHER="${APPIMAGE}"
-	export SNAP_NAME="firefox"
 	export PATH="${HERE}:${PATH}"
 	"${HERE}"/firefox-bin "$@"
 	HEREDOC
