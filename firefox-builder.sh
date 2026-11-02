@@ -7,12 +7,17 @@ mkdir -p tmp
 cd ./tmp || exit 1
 
 # DOWNLOAD APPIMAGETOOL
-if ! command -v appimagetool 1>/dev/null; then
-	if [ ! -f ./appimagetool ]; then
-		echo " Downloading appimagetool..." && curl -#Lo appimagetool https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage && chmod a+x ./appimagetool || exit 1
-	fi
-	export PATH="$PWD":"${PATH}"
+if ! test -f ./appimagetool; then
+	wget -q https://github.com/pkgforge-dev/appimagetool/releases/latest/download/appimagetool-x86_64-linux -O appimagetool
+	chmod a+x ./appimagetool
 fi
+
+# Pre-fetch host mkdwarfs because cross-packaging for aarch64 on x86_64 would otherwise fetch a foreign binary.
+if ! test -f ./mkdwarfs; then
+	wget -q https://github.com/mhx/dwarfs/releases/download/v0.15.6/dwarfs-universal-0.15.6-Linux-x86_64 -O mkdwarfs
+	chmod a+x ./mkdwarfs
+fi
+export PATH="$PWD":"${PATH}"
 
 # CREATE FIREFOX BROWSER APPIMAGES
 
@@ -397,6 +402,7 @@ _create_firefox_appimage() {
 
 	# Add the icon
 	cp ./browser/chrome/icons/default/default128.png firefox.png
+	cp firefox.png .DirIcon
 	cd .. || exit 1
 
 	# Check the version
@@ -414,8 +420,10 @@ _create_firefox_appimage() {
 	chmod a+x ./"$APP-$arch".AppDir/AppRun
 
 	# Export the AppDir to an AppImage
-	ARCH="$arch" appimagetool -u "gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|Firefox-appimage|continuous-$CHANNEL|*-$CHANNEL-*$arch.AppImage.zsync" \
-		./"$APP-$arch".AppDir Firefox-"$CHANNEL"-"$VERSION"-$arch.AppImage || exit 1
+	APPIMAGE_ARCH="$arch" VERSION="$VERSION" appimagetool \
+		-u "gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|Firefox-appimage|continuous-$CHANNEL|*-$CHANNEL-*$arch.AppImage.zsync" \
+		-n Firefox-"$CHANNEL"-"$VERSION"-$arch.AppImage \
+		./"$APP-$arch".AppDir || exit 1
 }
 
 ARCHITECTURES="x86_64 aarch64"
